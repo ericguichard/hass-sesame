@@ -1,0 +1,33 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sesame",
+        "description": "Enter your Sesame server URL and an API token (created in your Sesame portal).",
+        "data": {
+          "url": "Sesame server URL",
+          "token": "API token"
+        },
+        "data_description": {
+          "token": "Starts with ses_. It is stored encrypted and never displayed again."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Sesame",
+        "description": "Your token was revoked or has expired. Generate a new one in Sesame and paste it here.",
+        "data": {
+          "token": "API token"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid or revoked token.",
+      "cannot_connect": "Could not reach the Sesame server."
+    },
+    "abort": {
+      "already_configured": "This Sesame account is already set up.",
+      "reauth_successful": "Re-authentication successful.",
+      "wrong_account": "That token belongs to a different Sesame account."
+    }
+  }
+}

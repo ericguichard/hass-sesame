@@ -1,0 +1,3 @@
+# Pin the HA test harness; it pulls in a matching homeassistant + pytest stack.
+# Bump in lockstep with the min HA version in hacs.json / manifest.
+pytest-homeassistant-custom-component==0.13.*
