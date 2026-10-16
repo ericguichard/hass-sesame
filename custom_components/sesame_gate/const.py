@@ -14,10 +14,11 @@ DOMAIN = "sesame_gate"
 CONF_URL = "url"
 CONF_TOKEN = "token"
 
-# Coordinator poll interval (the whoami call). We do NOT track real-time state:
-# whoami validates the token and marks availability, it does not follow the
-# state of an access point (which the backend does not expose). 5 min is plenty.
-DEFAULT_SCAN_INTERVAL = 300
+# Coordinator poll interval (the whoami call). whoami validates the token and
+# carries the server-side availability of each access point (closed for the
+# season, unreachable equipment). 1 min (0.5.0, was 5 min) so a button greys out
+# and comes back promptly when the equipment drops or returns; the call is tiny.
+DEFAULT_SCAN_INTERVAL = 60
 
 # No access-point labels are hard-coded: the access points and their names come
 # from the server (whoami -> points_acces); each button is labelled from the

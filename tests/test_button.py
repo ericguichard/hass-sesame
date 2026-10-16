@@ -11,7 +11,15 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClien
 
 from custom_components.sesame_gate.const import DOMAIN
 
-from .const import ACCOUNT_ID, ENTRY_DATA, OPEN_URL, WHOAMI_OK, WHOAMI_SEASONAL, WHOAMI_URL
+from .const import (
+    ACCOUNT_ID,
+    ENTRY_DATA,
+    OPEN_URL,
+    WHOAMI_OK,
+    WHOAMI_SEASONAL,
+    WHOAMI_UNREACHABLE,
+    WHOAMI_URL,
+)
 
 
 async def _setup(hass: HomeAssistant) -> MockConfigEntry:
@@ -102,6 +110,20 @@ async def test_out_of_season_point_is_unavailable(
 
     assert hass.states.get(_entity_id(hass, "garage")).state == STATE_UNAVAILABLE
     assert hass.states.get(_entity_id(hass, "gate")).state != STATE_UNAVAILABLE
+
+    await _teardown(hass, entry)
+
+
+async def test_unreachable_point_is_unavailable(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """A point listed in points_injoignables -> its button is unavailable; the
+    other access point stays usable."""
+    aioclient_mock.get(WHOAMI_URL, json=WHOAMI_UNREACHABLE)
+    entry = await _setup(hass)
+
+    assert hass.states.get(_entity_id(hass, "gate")).state == STATE_UNAVAILABLE
+    assert hass.states.get(_entity_id(hass, "garage")).state != STATE_UNAVAILABLE
 
     await _teardown(hass, entry)
 

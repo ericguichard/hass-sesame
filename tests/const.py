@@ -23,6 +23,8 @@ WHOAMI_OK = {
 
 # whoami with one access point closed for the season (backend `points_hors_saison`).
 WHOAMI_SEASONAL = {**WHOAMI_OK, "points_hors_saison": ["garage"]}
+# whoami with one access point whose on-site equipment is unreachable.
+WHOAMI_UNREACHABLE = {**WHOAMI_OK, "points_injoignables": ["gate"]}
 
 # whoami for a DIFFERENT account (for the reauth consistency check).
 WHOAMI_OTHER = {

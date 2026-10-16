@@ -19,8 +19,11 @@ they belong.
   buttons go *unavailable* instead of silently failing.
 - **Seasonal closure** (0.4.0): when the server marks an access point as closed
   for the season, its button goes *unavailable* (greyed out) within one poll
-  (5 min) and comes back on its own when the server reopens it. A press in
+  (1 min) and comes back on its own when the server reopens it. A press in
   between gets a clear "closed for the season" error, not a fault.
+- **Unreachable equipment** (0.5.0): when the server's health probe reports an
+  access point's on-site equipment as unreachable, its button goes *unavailable*
+  within one poll (1 min) and comes back as soon as the server sees it again.
 - **Re-authentication**: revoke a token and HA simply prompts you for a new one —
   no reconfiguration.
 - **Re-exposure** to Apple Home / Google Home via HA's standard bridges.

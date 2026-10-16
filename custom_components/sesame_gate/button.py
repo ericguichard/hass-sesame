@@ -58,10 +58,14 @@ class SesameOpenButton(CoordinatorEntity[SesameCoordinator], ButtonEntity):
     @property
     def available(self) -> bool:
         """Unavailable (greyed out in HA) while the server lists the point as
-        closed for the season; otherwise follows the coordinator."""
+        closed for the season or unreachable; otherwise follows the
+        coordinator."""
         if not super().available:
             return False
-        return self._point not in (self.coordinator.data.points_hors_saison or [])
+        data = self.coordinator.data
+        return self._point not in (data.points_hors_saison or []) and (
+            self._point not in (data.points_injoignables or [])
+        )
 
     async def async_press(self) -> None:
         """Request the open; surface a real failure to the user."""

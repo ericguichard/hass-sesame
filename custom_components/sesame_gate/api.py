@@ -12,6 +12,11 @@ points that are deliberately out of service for the season under
 straight away. The integration shows such a button as unavailable instead of
 letting a press fail.
 
+Unreachable access points (backend contract since 2026-10, 0.5.0): ``whoami`` may
+also list under ``points_injoignables`` the points whose on-site equipment has
+stopped answering the server's health probe. Same treatment: the button is
+shown unavailable until the server reports the point reachable again.
+
 Access points are NOT hard-coded: the server declares them through ``whoami``
 (`points_acces`), so the integration adapts to any access (gate, door, barrier,
 etc.) the backend exposes.
@@ -62,6 +67,9 @@ class SesameData:
     # Access points closed for the season (server-declared, may be empty): the
     # matching buttons are shown unavailable. Defaults to [] for older backends.
     points_hors_saison: list[str] = field(default_factory=list)
+    # Access points whose on-site equipment is currently unreachable
+    # (server-side health probe): shown unavailable too. [] for older backends.
+    points_injoignables: list[str] = field(default_factory=list)
 
 
 class SesameApiClient:
@@ -104,6 +112,7 @@ class SesameApiClient:
             account_name=name or "Sesame",
             points_acces=list(data.get("points_acces") or []),
             points_hors_saison=list(data.get("points_hors_saison") or []),
+            points_injoignables=list(data.get("points_injoignables") or []),
         )
 
     async def open_access(self, access_point: str) -> bool:
