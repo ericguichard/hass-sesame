@@ -17,6 +17,10 @@ they belong.
   hard-coded in the integration).
 - **Availability**: if your token is revoked or the server is unreachable, the
   buttons go *unavailable* instead of silently failing.
+- **Seasonal closure** (0.4.0): when the server marks an access point as closed
+  for the season, its button goes *unavailable* (greyed out) within one poll
+  (5 min) and comes back on its own when the server reopens it. A press in
+  between gets a clear "closed for the season" error, not a fault.
 - **Re-authentication**: revoke a token and HA simply prompts you for a new one —
   no reconfiguration.
 - **Re-exposure** to Apple Home / Google Home via HA's standard bridges.

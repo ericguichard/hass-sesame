@@ -21,6 +21,9 @@ WHOAMI_OK = {
     "points_acces": ["gate", "garage"],
 }
 
+# whoami with one access point closed for the season (backend `points_hors_saison`).
+WHOAMI_SEASONAL = {**WHOAMI_OK, "points_hors_saison": ["garage"]}
+
 # whoami for a DIFFERENT account (for the reauth consistency check).
 WHOAMI_OTHER = {
     "coloti_id": OTHER_ACCOUNT_ID,

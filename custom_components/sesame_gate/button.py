@@ -15,7 +15,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import SesameConfigEntry
-from .api import SesameAuthError, SesameConnectionError
+from .api import SesameAuthError, SesameConnectionError, SesameOutOfSeasonError
 from .const import DOMAIN
 from .coordinator import SesameCoordinator
 
@@ -55,6 +55,14 @@ class SesameOpenButton(CoordinatorEntity[SesameCoordinator], ButtonEntity):
             manufacturer="Sesame",
         )
 
+    @property
+    def available(self) -> bool:
+        """Unavailable (greyed out in HA) while the server lists the point as
+        closed for the season; otherwise follows the coordinator."""
+        if not super().available:
+            return False
+        return self._point not in (self.coordinator.data.points_hors_saison or [])
+
     async def async_press(self) -> None:
         """Request the open; surface a real failure to the user."""
         try:
@@ -62,6 +70,11 @@ class SesameOpenButton(CoordinatorEntity[SesameCoordinator], ButtonEntity):
         except SesameAuthError as err:
             raise HomeAssistantError(
                 "Sesame token revoked - reconfigure the integration"
+            ) from err
+        except SesameOutOfSeasonError as err:
+            # Pressed before the next whoami poll greyed the button out.
+            raise HomeAssistantError(
+                f"{self._attr_name} is closed for the season (not a fault)"
             ) from err
         except SesameConnectionError as err:
             raise HomeAssistantError(f"Sesame unreachable: {err}") from err

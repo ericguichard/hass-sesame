@@ -6,6 +6,12 @@ Only two calls:
   actuating anything, returns the account identity + the list of access points.
 - ``POST /api/ouvrir``            - momentary open, returns ``{autorise}``.
 
+Seasonal closure (backend contract since 2026-10): ``whoami`` may list access
+points that are deliberately out of service for the season under
+``points_hors_saison``; opening one returns HTTP 503 ``{erreur: "hors_saison"}``
+straight away. The integration shows such a button as unavailable instead of
+letting a press fail.
+
 Access points are NOT hard-coded: the server declares them through ``whoami``
 (`points_acces`), so the integration adapts to any access (gate, door, barrier,
 etc.) the backend exposes.
@@ -20,7 +26,7 @@ Note: the route names and JSON keys (`/api/ouvrir`, `point_acces`, `autorise`,
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import aiohttp
 
@@ -31,6 +37,14 @@ class SesameAuthError(Exception):
 
 class SesameConnectionError(Exception):
     """Backend unreachable or unexpected response."""
+
+
+class SesameOutOfSeasonError(Exception):
+    """The access point is closed for the season (HTTP 503 ``hors_saison``).
+
+    Nothing is broken: the backend refuses on purpose. Kept distinct from
+    ``SesameConnectionError`` so the message does not suggest a fault.
+    """
 
 
 @dataclass(slots=True)
@@ -45,6 +59,9 @@ class SesameData:
     # Exposable access points (one button per entry), as declared by the server
     # - no name is hard-coded in the integration.
     points_acces: list[str]
+    # Access points closed for the season (server-declared, may be empty): the
+    # matching buttons are shown unavailable. Defaults to [] for older backends.
+    points_hors_saison: list[str] = field(default_factory=list)
 
 
 class SesameApiClient:
@@ -86,6 +103,7 @@ class SesameApiClient:
             account_id=data["coloti_id"],
             account_name=name or "Sesame",
             points_acces=list(data.get("points_acces") or []),
+            points_hors_saison=list(data.get("points_hors_saison") or []),
         )
 
     async def open_access(self, access_point: str) -> bool:
@@ -98,9 +116,17 @@ class SesameApiClient:
             ) as resp:
                 if resp.status == 401:
                     raise SesameAuthError
+                if resp.status == 503:
+                    # Seasonal closure is a deliberate refusal, not an outage:
+                    # read the body before raise_for_status() turns it generic.
+                    body = await resp.json(content_type=None)
+                    if isinstance(body, dict) and body.get("erreur") == "hors_saison":
+                        raise SesameOutOfSeasonError(access_point)
                 resp.raise_for_status()
                 data = await resp.json()
         except aiohttp.ClientError as err:
+            raise SesameConnectionError(str(err)) from err
+        except ValueError as err:  # 503 with a non-JSON body
             raise SesameConnectionError(str(err)) from err
 
         return bool(data.get("autorise"))

@@ -2,7 +2,7 @@
 
 import pytest
 from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS
-from homeassistant.const import ATTR_ENTITY_ID
+from homeassistant.const import ATTR_ENTITY_ID, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
@@ -11,7 +11,7 @@ from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClien
 
 from custom_components.sesame_gate.const import DOMAIN
 
-from .const import ACCOUNT_ID, ENTRY_DATA, OPEN_URL, WHOAMI_OK, WHOAMI_URL
+from .const import ACCOUNT_ID, ENTRY_DATA, OPEN_URL, WHOAMI_OK, WHOAMI_SEASONAL, WHOAMI_URL
 
 
 async def _setup(hass: HomeAssistant) -> MockConfigEntry:
@@ -82,6 +82,42 @@ async def test_press_refusal_raises(
     entry = await _setup(hass)
 
     with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            BUTTON_DOMAIN,
+            SERVICE_PRESS,
+            {ATTR_ENTITY_ID: _entity_id(hass, "gate")},
+            blocking=True,
+        )
+
+    await _teardown(hass, entry)
+
+
+async def test_out_of_season_point_is_unavailable(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """A point listed in points_hors_saison -> its button is unavailable (greyed
+    out); the other access point stays usable."""
+    aioclient_mock.get(WHOAMI_URL, json=WHOAMI_SEASONAL)
+    entry = await _setup(hass)
+
+    assert hass.states.get(_entity_id(hass, "garage")).state == STATE_UNAVAILABLE
+    assert hass.states.get(_entity_id(hass, "gate")).state != STATE_UNAVAILABLE
+
+    await _teardown(hass, entry)
+
+
+async def test_press_out_of_season_503_raises_clear_error(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """Press lands before the next poll greyed the button: the backend answers
+    503 hors_saison -> HomeAssistantError saying it is a seasonal closure."""
+    aioclient_mock.get(WHOAMI_URL, json=WHOAMI_OK)
+    aioclient_mock.post(
+        OPEN_URL, status=503, json={"erreur": "hors_saison", "point_acces": "gate"}
+    )
+    entry = await _setup(hass)
+
+    with pytest.raises(HomeAssistantError, match="closed for the season"):
         await hass.services.async_call(
             BUTTON_DOMAIN,
             SERVICE_PRESS,
